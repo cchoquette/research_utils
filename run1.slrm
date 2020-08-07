@@ -1,0 +1,31 @@
+#!/bin/sh
+#SBATCH --time=05-00:00                       # time (DD-HH:MM)
+#SBATCH --gres=gpu:1                         # Number of GPUs (per node)
+#SBATCH --cpus-per-task=1                    # CPU cores/threads
+#SBATCH --mem=24G                            # memory per node -> use powers of 2
+#SBATCH --qos=normal                         # ICML
+#SBATCH --partition=p100
+#SBATCH --open-mode=append
+#SBATCH --output=/scratch/ssd001/home/cchoquet/jobs/%j.out
+#SBATCH --error=/scratch/ssd001/home/cchoquet/jobs/%j.err
+
+date=$(date '+%Y-%m-%d')
+
+echo `date`: Job $SLURM_JOB_ID is allocated resource
+
+eval "$(conda shell.bash hook)"
+conda activate tf
+
+# conda activate /h/cchoquet/.conda/envs/tf
+
+. /etc/profile.d/lmod.sh
+module use /pkgs/environment-modules/
+touch /checkpoint/${USER}/${SLURM_JOB_ID}/DELAYPURGE
+
+archive=$PWD/experiment_results/"$2"/$SLURM_JOB_ID
+mkdir -p $archive
+
+python -u "$@" --slurm_id ${SLURM_JOB_ID}
+
+echo `date`: "Job $SLURM_JOB_ID finished running, exit code: $?"
+
